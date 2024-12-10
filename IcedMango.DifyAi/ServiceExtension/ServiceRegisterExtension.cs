@@ -2,6 +2,10 @@ using System.Net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
+using System.Net.Http;
+using System.ClientModel.Primitives;
+using Microsoft.Extensions.Options;
+using IcedMango.DifyAi.Services;
 
 namespace DifyAi.ServiceExtension;
 
@@ -30,12 +34,12 @@ public static class ServiceRegisterExtension
 
         if (string.IsNullOrEmpty(botApiKey))
         {
-            throw new DifyConfigMissingException("Missing base url!");
+            throw new DifyConfigMissingException("Missing api key!");
         }
 
         if (string.IsNullOrEmpty(baseUrl))
         {
-            throw new DifyConfigMissingException("Missing api key!");
+            throw new DifyConfigMissingException("Missing base url!");
         }
 
         if (botApiKey.StartsWith("Bearer ")) botApiKey = botApiKey.Replace("Bearer ", "");
@@ -54,8 +58,10 @@ public static class ServiceRegisterExtension
                 {
                     UseDefaultCredentials = false
                 },
+#if !NETSTANDARD2_0
                 ServerCertificateCustomValidationCallback =
                     HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+#endif
             });
 
         //add dataset api client
@@ -79,18 +85,33 @@ public static class ServiceRegisterExtension
                     {
                         UseDefaultCredentials = false
                     },
+#if !NETSTANDARD2_0
                     ServerCertificateCustomValidationCallback =
                         HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+#endif
                 });
         }
 
 
         //register service
         services.AddTransient<IRequestExtension, RequestExtension>();
-
+        services.AddTransient<ClientPipeline>(isp =>
+        {
+            var clientPipeline = ClientPipeline.Create(new ClientPipelineOptions(),
+            perCallPolicies: [
+               
+            ],
+            perTryPolicies: [
+                ApiKeyAuthenticationPolicy.CreateHeaderApiKeyPolicy(new System.ClientModel.ApiKeyCredential(botApiKey), "Authorization", "Bearer")
+            ],
+            beforeTransportPolicies: [
+            ]);
+         
+            return clientPipeline;
+        });
         services.AddTransient<IDifyAiChatServices, DifyAiChatServices>();
         services.AddTransient<IDifyAiDatasetServices, DifyAiDatasetServices>();
-
+        services.AddTransient<IDifyAiWorkflowServices, DifyAiWorkflowServices>();
 
         return services;
     }

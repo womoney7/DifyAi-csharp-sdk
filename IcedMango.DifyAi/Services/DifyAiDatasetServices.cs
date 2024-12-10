@@ -1,3 +1,4 @@
+using System.Net;
 using System.Web;
 using DifyAi.Dto.ApiParamDto;
 using Mapster;
@@ -323,7 +324,7 @@ public class DifyAiDatasetServices : IDifyAiDatasetServices
         CancellationToken cancellationToken = default)
     {
         var res = await _requestExtension.HttpGet<Dify_BaseRequestResDto<List<Dify_GetDocumentListResDto>>>(
-            $"datasets/{paramDto.DatasetId}/documents?keyword={HttpUtility.UrlEncode(paramDto.Keyword)}&page={paramDto.Page}&limit={paramDto.Limit}",
+            $"datasets/{paramDto.DatasetId}/documents?keyword={WebUtility.UrlEncode(paramDto.Keyword)}&page={paramDto.Page}&limit={paramDto.Limit}",
             overrideApiKey,
             cancellationToken,
             DifyApiClientName.Dataset);
@@ -386,7 +387,7 @@ public class DifyAiDatasetServices : IDifyAiDatasetServices
         CancellationToken cancellationToken = default)
     {
         var res = await _requestExtension.HttpGet<Dify_DocumentSegmentResDto>(
-            $"datasets/{paramDto.DatasetId}/documents/{paramDto.DocumentId}/segments?keyword={HttpUtility.UrlEncode(paramDto.Keyword)}&status={paramDto.Status}",
+            $"datasets/{paramDto.DatasetId}/documents/{paramDto.DocumentId}/segments?keyword={WebUtility.UrlEncode(paramDto.Keyword)}&status={paramDto.Status}",
             overrideApiKey,
             cancellationToken,
             DifyApiClientName.Dataset);

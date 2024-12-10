@@ -1,6 +1,9 @@
+using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+
 using Microsoft.Extensions.Logging;
+
 using Newtonsoft.Json;
 
 namespace DifyAi.Request;
@@ -43,8 +46,11 @@ public class RequestExtension : IRequestExtension
     {
         if (!responseMessage.IsSuccessStatusCode)
         {
+#if NET47 || NETSTANDARD2_0
+            var respContent = await responseMessage.Content.ReadAsStringAsync();
+#else
             var respContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
-
+#endif
             try
             {
                 var error = JsonConvert.DeserializeObject<Dify_BaseErrorResDto>(respContent);
@@ -76,7 +82,12 @@ public class RequestExtension : IRequestExtension
             }
         }
 
+#if NET47 || NETSTANDARD2_0
+        var resContent = await responseMessage.Content.ReadAsStringAsync();
+#else
         var resContent = await responseMessage.Content.ReadAsStringAsync(cancellationToken);
+#endif
+
         var obj = JsonConvert.DeserializeObject<T>(resContent);
 
         return new DifyApiResult<T>()
@@ -208,7 +219,15 @@ public class RequestExtension : IRequestExtension
         }
 
         var fileType = MimeMapping.MimeUtility.GetMimeMapping(paramDto.FilePath);
-        var fileContent = new ByteArrayContent(await File.ReadAllBytesAsync(paramDto.FilePath, cancellationToken));
+
+
+
+#if NET47 || NETSTANDARD2_0
+        var bytes =File.ReadAllBytes(paramDto.FilePath);
+#else
+        var bytes = await File.ReadAllBytesAsync(paramDto.FilePath, cancellationToken);
+#endif
+        var fileContent = new ByteArrayContent(bytes);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(fileType);
         formData.Add(fileContent, "file", Path.GetFileName(paramDto.FilePath));
 
@@ -243,7 +262,14 @@ public class RequestExtension : IRequestExtension
         }
 
         var fileType = MimeMapping.MimeUtility.GetMimeMapping(paramDto.FilePath);
-        var fileContent = new ByteArrayContent(await File.ReadAllBytesAsync(paramDto.FilePath, cancellationToken));
+
+#if NET47 || NETSTANDARD2_0
+        var bytes =File.ReadAllBytes(paramDto.FilePath);
+#else
+        var bytes = await File.ReadAllBytesAsync(paramDto.FilePath, cancellationToken);
+#endif
+
+        var fileContent = new ByteArrayContent(bytes);
         fileContent.Headers.ContentType = new MediaTypeHeaderValue(fileType);
         formData.Add(fileContent, "file", Path.GetFileName(paramDto.FilePath));
 
