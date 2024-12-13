@@ -2,6 +2,7 @@
 
 using IcedMango.DifyAi.Request;
 
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 using System;
@@ -14,6 +15,7 @@ using System.Net.ServerSentEvents;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 
 namespace IcedMango.DifyAi.Services
 {
@@ -22,11 +24,13 @@ namespace IcedMango.DifyAi.Services
 
         private readonly IRequestExtension _requestExtension;
         private readonly ClientPipeline _pipeline;
+        private readonly IConfiguration _config;
 
-        public DifyAiWorkflowServices(IRequestExtension requestExtension, ClientPipeline clientPipeline)
+        public DifyAiWorkflowServices(IRequestExtension requestExtension, ClientPipeline clientPipeline, IConfiguration configuration)
         {
             _requestExtension = requestExtension;
             _pipeline = clientPipeline;
+            _config = configuration;
         }
         public async Task<DifyApiResult<Dify_WorkflowCompletionResDto>> CreateWorkflowBlockModeAsync(Dify_WorkflowParamDto paramDto, string overrideApiKey, CancellationToken cancellationToken)
         {
@@ -63,11 +67,8 @@ namespace IcedMango.DifyAi.Services
             message.ResponseClassifier = PipelineMessageClassifier.Create(stackalloc ushort[] { 200 });
             var request = message.Request;
             request.Method = "POST";
-            //System.UriBuilder uri = new System.UriBuilder();
-            //uri.Scheme = "https";
-            //uri.Host = "api.dify.ai";
-            //uri.Path = "/workflows/run";
-            request.Uri = new Uri("https://das-dify-testing.deloitte.com.cn/v1/workflows/run");
+            string url = $"{_config.GetSection("DifyAi:BaseUrl")?.Value}workflows/run";
+            request.Uri = new Uri(url);
             //request.Headers.Set("Accept", "application/json");
             request.Headers.Set("Content-Type", "application/json");
             request.Content = content;
@@ -286,7 +287,7 @@ namespace IcedMango.DifyAi.Services
 
             public StreamingChatUpdateEnumerator(ClientResult page, CancellationToken cancellationToken)
             {
-              
+
                 _response = page.GetRawResponse();
                 _cancellationToken = cancellationToken;
             }
