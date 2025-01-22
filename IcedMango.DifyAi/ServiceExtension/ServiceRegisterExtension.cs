@@ -31,7 +31,7 @@ public static class ServiceRegisterExtension
         var datasetApiKey = configuration.GetSection("DifyAi:DatasetApiKey").Value;
         var baseUrl = configuration.GetSection("DifyAi:BaseUrl").Value;
         var proxyConfig = configuration.GetSection("DifyAi:ProxyConfig").Value;
-
+        var subscriptionKey = configuration.GetSection("DifyAi:Ocp-Apim-Subscription-Key").Value;
         if (string.IsNullOrEmpty(botApiKey))
         {
             throw new DifyConfigMissingException("Missing api key!");
@@ -50,6 +50,10 @@ public static class ServiceRegisterExtension
                 client.DefaultRequestHeaders.Add("User-Agent", "IcedMango/DifyAiSdk");
                 client.BaseAddress = new Uri(baseUrl);
                 client.DefaultRequestHeaders.Authorization = AuthenticationHeaderValue.Parse($"Bearer {botApiKey}");
+                if (!string.IsNullOrEmpty(subscriptionKey))
+                {
+                    client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", subscriptionKey);
+                }
             }).ConfigurePrimaryHttpMessageHandler(() => string.IsNullOrWhiteSpace(proxyConfig)
             ? new HttpClientHandler()
             : new HttpClientHandler
@@ -77,6 +81,12 @@ public static class ServiceRegisterExtension
 
                     client.DefaultRequestHeaders.Authorization =
                         AuthenticationHeaderValue.Parse($"Bearer {datasetApiKey}");
+
+                    if (!string.IsNullOrEmpty(subscriptionKey))
+                    {
+                        client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", subscriptionKey);
+                    }
+
                 }).ConfigurePrimaryHttpMessageHandler(() => string.IsNullOrWhiteSpace(proxyConfig)
                 ? new HttpClientHandler()
                 : new HttpClientHandler
@@ -95,18 +105,21 @@ public static class ServiceRegisterExtension
 
         //register service
         services.AddTransient<IRequestExtension, RequestExtension>();
-        services.AddTransient<ClientPipeline>(isp =>
+        services.AddSingleton<ClientPipeline>(isp =>
         {
-            var clientPipeline = ClientPipeline.Create(new ClientPipelineOptions(),
-            perCallPolicies: [
-               
-            ],
-            perTryPolicies: [
-                ApiKeyAuthenticationPolicy.CreateHeaderApiKeyPolicy(new System.ClientModel.ApiKeyCredential(botApiKey), "Authorization", "Bearer")
-            ],
-            beforeTransportPolicies: [
-            ]);
-         
+            List<PipelinePolicy> list = new List<PipelinePolicy>();
+            list.Add(ApiKeyAuthenticationPolicy.CreateHeaderApiKeyPolicy(new System.ClientModel.ApiKeyCredential(botApiKey), "Authorization", "Bearer"));
+            if (!string.IsNullOrEmpty(subscriptionKey))
+            {
+                list.Add(ApiKeyAuthenticationPolicy.CreateHeaderApiKeyPolicy(new System.ClientModel.ApiKeyCredential(subscriptionKey), "Ocp-Apim-Subscription-Key"));
+            }
+            var clientPipeline = ClientPipeline
+            .Create(new ClientPipelineOptions() { RetryPolicy = new ClientRetryPolicy(0), NetworkTimeout = new TimeSpan(0, 0, 30) },
+                perCallPolicies: [],
+                perTryPolicies: new ReadOnlySpan<PipelinePolicy>(list.ToArray()),
+                beforeTransportPolicies: []
+            );
+
             return clientPipeline;
         });
         services.AddTransient<IDifyAiChatServices, DifyAiChatServices>();

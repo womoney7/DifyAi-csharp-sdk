@@ -64,7 +64,7 @@ namespace IcedMango.DifyAi.Services
         PipelineMessage CreateCreateChatCompletionRequest(BinaryContent content, RequestOptions options)
         {
             var message = _pipeline.CreateMessage();
-            message.ResponseClassifier = PipelineMessageClassifier.Create(stackalloc ushort[] { 200 });
+            message.ResponseClassifier = PipelineMessageClassifier.Create(new ushort[] { 200 });
             var request = message.Request;
             request.Method = "POST";
             string url = $"{_config.GetSection("DifyAi:BaseUrl")?.Value}workflows/run";
@@ -151,8 +151,6 @@ namespace IcedMango.DifyAi.Services
 
             public AsyncStreamingWorkflowChunkCompletionEnumerator(ClientResult page, CancellationToken cancellationToken)
             {
-
-
                 _response = page.GetRawResponse();
                 _cancellationToken = cancellationToken;
             }
