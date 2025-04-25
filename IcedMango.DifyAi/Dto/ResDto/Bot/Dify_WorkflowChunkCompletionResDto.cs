@@ -188,8 +188,10 @@ public class Dify_WorkflowChunkCompletionResDto : IJsonModel<Dify_WorkflowChunkC
                         inputs.Add(propInput.Name, propInput.Value.GetString());
                     else if (propInput.Value.ValueKind == JsonValueKind.Array)
                     {
-
-                        outputs.Add(propInput.Name, propInput.Value.EnumerateArray().Select(x => x.GetString()).ToArray());
+                        outputs.Add(propInput.Name,propInput.Value.EnumerateArray()
+                                    .Where(p => p.ValueKind == JsonValueKind.String)
+                                    .Select(x => x.GetString()).ToArray()
+                        );
                     }
                 }
 
@@ -210,7 +212,7 @@ public class Dify_WorkflowChunkCompletionResDto : IJsonModel<Dify_WorkflowChunkC
                         outputs.Add(propOutput.Name, propOutput.Value.GetString());
                     else if (propOutput.Value.ValueKind == JsonValueKind.Array)
                     {
-                        outputs.Add(propOutput.Name, propOutput.Value.EnumerateArray().Select(x => x.GetString()).ToArray());
+                        outputs.Add(propOutput.Name, propOutput.Value.EnumerateArray().Where(p => p.ValueKind == JsonValueKind.String).Select(x => x.GetString()).ToArray());
                     }
 
                 }
