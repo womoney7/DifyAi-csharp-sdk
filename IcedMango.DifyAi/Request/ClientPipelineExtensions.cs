@@ -71,8 +71,9 @@ namespace IcedMango.DifyAi.Request
         {
             try
             {
-                //using JsonDocument errorDocument = JsonDocument.Parse(response.Content);
-                return "Error " ;
+                using JsonDocument errorDocument = JsonDocument.Parse(response.Content);
+                errorDocument.RootElement.TryGetProperty("message", out JsonElement messageElement);
+                return messageElement.GetString();
             }
             catch (InvalidOperationException)
             {
