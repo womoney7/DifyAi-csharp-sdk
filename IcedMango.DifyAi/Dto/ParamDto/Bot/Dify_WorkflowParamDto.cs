@@ -7,8 +7,6 @@ using System.Text.Json;
 
 using IcedMango.DifyAi.Request;
 
-using Microsoft.Extensions.Options;
-
 using Newtonsoft.Json;
 
 namespace DifyAi.Dto.ParamDto;
