@@ -67,7 +67,15 @@ namespace IcedMango.DifyAi.Services
             message.ResponseClassifier = PipelineMessageClassifier.Create(new ushort[] { 200 });
             var request = message.Request;
             request.Method = "POST";
-            string url = $"{_config.GetSection("DifyAi:BaseUrl")?.Value}workflows/run";
+
+            // 确保BaseUrl末尾有正确的"/"
+            string baseUrl = _config.GetValue<string>("DifyAi:BaseUrl") ?? string.Empty;
+            if (!string.IsNullOrEmpty(baseUrl) && !baseUrl.EndsWith("/"))
+            {
+                baseUrl += "/";
+            }
+            string url = $"{baseUrl}workflows/run";
+
             request.Uri = new Uri(url);
             //request.Headers.Set("Accept", "application/json");
             request.Headers.Set("Content-Type", "application/json");

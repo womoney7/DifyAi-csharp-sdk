@@ -32,6 +32,8 @@ public static class ServiceRegisterExtension
         var baseUrl = configuration.GetSection("DifyAi:BaseUrl").Value;
         var proxyConfig = configuration.GetSection("DifyAi:ProxyConfig").Value;
         var subscriptionKey = configuration.GetSection("DifyAi:Ocp-Apim-Subscription-Key").Value;
+        // 读取超时配置，默认 5 分钟
+        var timeoutMinutes = configuration.GetValue<int?>("DifyAi:TimeoutMinutes") ?? 5;
         if (string.IsNullOrEmpty(botApiKey))
         {
             throw new DifyConfigMissingException("Missing api key!");
@@ -114,7 +116,12 @@ public static class ServiceRegisterExtension
                 list.Add(ApiKeyAuthenticationPolicy.CreateHeaderApiKeyPolicy(new System.ClientModel.ApiKeyCredential(subscriptionKey), "Ocp-Apim-Subscription-Key"));
             }
             var clientPipeline = ClientPipeline
-            .Create(new ClientPipelineOptions() { RetryPolicy = new ClientRetryPolicy(0), NetworkTimeout = new TimeSpan(0, 0, 30) },
+            .Create(new ClientPipelineOptions()
+            {
+                RetryPolicy = new ClientRetryPolicy(0),
+                // 使用可配置的超时时间，而不是硬编码的 30 秒
+                NetworkTimeout = TimeSpan.FromMinutes(timeoutMinutes)
+            },
                 perCallPolicies: [],
                 perTryPolicies: new ReadOnlySpan<PipelinePolicy>(list.ToArray()),
                 beforeTransportPolicies: []

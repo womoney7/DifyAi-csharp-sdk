@@ -184,15 +184,7 @@ public class Dify_WorkflowChunkCompletionResDto : IJsonModel<Dify_WorkflowChunkC
                 inputs = new Dictionary<string, object>();
                 foreach (var propInput in property.Value.EnumerateObject())
                 {
-                    if (propInput.Value.ValueKind == JsonValueKind.String)
-                        inputs.Add(propInput.Name, propInput.Value.GetString());
-                    else if (propInput.Value.ValueKind == JsonValueKind.Array)
-                    {
-                        outputs.Add(propInput.Name,propInput.Value.EnumerateArray()
-                                    .Where(p => p.ValueKind == JsonValueKind.String)
-                                    .Select(x => x.GetString()).ToArray()
-                        );
-                    }
+                    inputs.Add(propInput.Name, DeserializeJsonValue(propInput.Value));
                 }
 
                 continue;
@@ -208,13 +200,7 @@ public class Dify_WorkflowChunkCompletionResDto : IJsonModel<Dify_WorkflowChunkC
                 outputs = new Dictionary<string, object>();
                 foreach (var propOutput in property.Value.EnumerateObject())
                 {
-                    if (propOutput.Value.ValueKind == JsonValueKind.String)
-                        outputs.Add(propOutput.Name, propOutput.Value.GetString());
-                    else if (propOutput.Value.ValueKind == JsonValueKind.Array)
-                    {
-                        outputs.Add(propOutput.Name, propOutput.Value.EnumerateArray().Where(p => p.ValueKind == JsonValueKind.String).Select(x => x.GetString()).ToArray());
-                    }
-
+                    outputs.Add(propOutput.Name, DeserializeJsonValue(propOutput.Value));
                 }
 
                 continue;
@@ -229,12 +215,7 @@ public class Dify_WorkflowChunkCompletionResDto : IJsonModel<Dify_WorkflowChunkC
                 processData = new Dictionary<string, object>();
                 foreach (var propProData in property.Value.EnumerateObject())
                 {
-                    if (propProData.Value.ValueKind == JsonValueKind.String)
-                        processData.Add(propProData.Name, propProData.Value.GetString());
-                    else if (propProData.Value.ValueKind == JsonValueKind.Array)
-                    {
-                        processData.Add(propProData.Name, propProData.Value.EnumerateArray().Where(p => p.ValueKind == JsonValueKind.String).Select(x => x.GetString()).ToArray());
-                    }
+                    processData.Add(propProData.Name, DeserializeJsonValue(propProData.Value));
                 }
 
                 continue;
@@ -334,15 +315,6 @@ public class Dify_WorkflowChunkCompletionResDto : IJsonModel<Dify_WorkflowChunkC
                 text = property.Value.GetString();
                 continue;
             }
-            if (property.NameEquals("text"u8))
-            {
-                if (property.Value.ValueKind == JsonValueKind.Null)
-                {
-                    continue;
-                }
-                text = property.Value.GetString();
-                continue;
-            }
             if (property.NameEquals("from_variable_selector"u8))
             {
                 if (property.Value.ValueKind == JsonValueKind.Null)
@@ -386,6 +358,57 @@ public class Dify_WorkflowChunkCompletionResDto : IJsonModel<Dify_WorkflowChunkC
             Text = text,
             FromVarSelector = fromVariableSelector
         };
+    }
+
+    /// <summary>
+    /// 辅助方法：反序列化任意JSON值类型，支持String、Number、Boolean、Array、Object、Null
+    /// </summary>
+    private static object DeserializeJsonValue(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.String:
+                return element.GetString();
+
+            case JsonValueKind.Number:
+                // 尝试将数字解析为最合适的类型
+                if (element.TryGetInt32(out int intValue))
+                    return intValue;
+                if (element.TryGetInt64(out long longValue))
+                    return longValue;
+                if (element.TryGetDouble(out double doubleValue))
+                    return doubleValue;
+                return element.GetDecimal();
+
+            case JsonValueKind.True:
+                return true;
+
+            case JsonValueKind.False:
+                return false;
+
+            case JsonValueKind.Array:
+                // 递归处理数组，支持混合类型元素
+                return element.EnumerateArray()
+                    .Select(item => DeserializeJsonValue(item))
+                    .ToArray();
+
+            case JsonValueKind.Object:
+                // 递归处理对象
+                var dict = new Dictionary<string, object>();
+                foreach (var prop in element.EnumerateObject())
+                {
+                    dict.Add(prop.Name, DeserializeJsonValue(prop.Value));
+                }
+                return dict;
+
+            case JsonValueKind.Null:
+            case JsonValueKind.Undefined:
+                return null;
+
+            default:
+                // 对于未知类型，返回原始JSON字符串
+                return element.GetRawText();
+        }
     }
 
     public Dify_WorkflowChunkCompletionResDto Create(ref Utf8JsonReader reader, ModelReaderWriterOptions options)
