@@ -64,6 +64,7 @@ namespace IcedMango.DifyAi.Services
         PipelineMessage CreateCreateChatCompletionRequest(BinaryContent content, RequestOptions options)
         {
             var message = _pipeline.CreateMessage();
+            message.BufferResponse = false;
             message.ResponseClassifier = PipelineMessageClassifier.Create(new ushort[] { 200 });
             var request = message.Request;
             request.Method = "POST";
